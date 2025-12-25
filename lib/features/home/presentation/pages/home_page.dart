@@ -5,6 +5,8 @@ import 'package:personal_news_brief/features/article/presentation/pages/article_
 import 'package:personal_news_brief/features/rss/presentation/pages/rss_sources_page.dart';
 import 'package:personal_news_brief/core/platform/platform_service.dart';
 import 'package:personal_news_brief/features/external_editor/data/services/external_editor_launcher.dart';
+import 'package:personal_news_brief/features/article/data/models/article.dart';
+import 'package:personal_news_brief/core/database/isar_service.dart';
 import 'package:flutter_html/flutter_html.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -317,15 +319,15 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.article.source),
+        title: Text(article.source),
         actions: [
           IconButton(
             icon: Icon(
-              widget.article.isStar ? Icons.star : Icons.star_border,
-              color: widget.article.isStar ? Colors.amber : null,
+              article.isStar ? Icons.star : Icons.star_border,
+              color: article.isStar ? Colors.amber : null,
             ),
             onPressed: () {
-              ref.read(articleListProvider.notifier).toggleStar(widget.article.url);
+              ref.read(articleListProvider.notifier).toggleStar(article.url);
             },
           ),
         ],
@@ -336,12 +338,12 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.article.title,
+              article.title,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              _formatDate(widget.article.publishedAt),
+              _formatDate(article.publishedAt),
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 16),
@@ -352,7 +354,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                   children: [
                     // 使用flutter_html渲染HTML内容
                     Html(
-                      data: widget.article.content,
+                      data: article.content,
                       style: {
                         "body": Style(
                           fontSize: FontSize(16.0),
@@ -402,7 +404,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                           margin: Margins.symmetric(vertical: 8.0),
                         ),
                         "img": Style(
-                          width: Width.maxContent(),
+                          width: Width(100),
                           height: Height.auto(),
                         ),
                       },
@@ -414,7 +416,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                     ),
                     
                     // AI摘要部分
-                    if (widget.article.summary != null) ...[
+                    if (article.summary != null) ...[
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 8),
@@ -434,7 +436,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                           ),
                         ),
                         child: Text(
-                          widget.article.summary!,
+                          article.summary!,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
@@ -453,7 +455,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
               children: [
                 ElevatedButton.icon(
                   onPressed: () async {
-                    await PlatformService.openUrl(widget.article.url);
+                    await PlatformService.openUrl(article.url);
                   },
                   icon: const Icon(Icons.open_in_browser),
                   label: const Text('在浏览器中打开'),
@@ -461,14 +463,14 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                 ElevatedButton.icon(
                   onPressed: () async {
                     await PlatformService.shareText(
-                      widget.article.title,
-                      '${widget.article.title}\n\n${widget.article.url}',
+                      article.title,
+                      '${article.title}\n\n${article.url}',
                     );
                   },
                   icon: const Icon(Icons.share),
                   label: const Text('分享'),
                 ),
-                if (widget.article.summary == null)
+                if (article.summary == null)
                   ElevatedButton.icon(
                     onPressed: _isGeneratingSummary ? null : _generateSummary,
                     icon: _isGeneratingSummary
@@ -488,12 +490,12 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Icon(widget.article.noteExternalId != null
+                      : Icon(article.noteExternalId != null
                           ? Icons.note_alt
                           : Icons.note_add),
                   label: Text(_isCreatingNote
                       ? '创建中...'
-                      : widget.article.noteExternalId != null
+                      : article.noteExternalId != null
                           ? '更新笔记'
                           : '创建笔记'),
                 ),
@@ -506,7 +508,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           try {
-            await ExternalEditorLauncher.launchEditor(widget.article);
+            await ExternalEditorLauncher.launchEditor(article);
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -532,10 +534,10 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
       // 为了演示，我们使用一个简单的模拟摘要
       await Future.delayed(const Duration(seconds: 2));
       
-      final mockSummary = '这是一篇关于${widget.article.source}的文章，主要讨论了${widget.article.title.split(' ').take(3).join(' ')}等内容。文章提供了详细的分析和见解，值得深入阅读。';
+      final mockSummary = '这是一篇关于${article.source}的文章，主要讨论了${article.title.split(' ').take(3).join(' ')}等内容。文章提供了详细的分析和见解，值得深入阅读。';
       
       // 更新文章摘要
-      await ref.read(isarServiceProvider).updateSummary(widget.article.url, mockSummary);
+      await IsarService.updateSummary(article.url, mockSummary);
       
       // 刷新文章列表状态
       await ref.read(articleListProvider.notifier).refreshArticles();
@@ -573,7 +575,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
       final mockNoteId = 'note_${DateTime.now().millisecondsSinceEpoch}';
       
       // 更新文章的外部笔记ID
-      await ref.read(isarServiceProvider).updateNoteExternalId(widget.article.url, mockNoteId);
+      await IsarService.updateNoteExternalId(article.url, mockNoteId);
       
       // 刷新文章列表状态
       await ref.read(articleListProvider.notifier).refreshArticles();

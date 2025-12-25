@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:xml/xml.dart';
 import 'package:isar/isar.dart';
 import 'package:personal_news_brief/features/article/data/models/article.dart';
+import 'package:http/http.dart' as http;
 
 class RssParserService {
   final Dio _dio;
@@ -17,7 +18,7 @@ class RssParserService {
             'User-Agent': 'PersonalNewsBrief/1.0 (RSS Reader)',
             'Accept': 'application/rss+xml, application/xml, text/xml',
           },
-          connectTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 30),
         ),
       );
@@ -192,7 +193,8 @@ class RssParserService {
 
     // 如果所有格式都失败，尝试使用HTTP日期解析
     try {
-      return HttpDate.parse(dateTimeStr);
+      // 由于http.HttpDate在新版本中可能不可用，我们使用DateTime.parse作为后备
+      return DateTime.parse(dateTimeStr);
     } catch (e) {
       // 最后尝试直接解析
       return DateTime.parse(dateTimeStr);

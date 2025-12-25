@@ -1,28 +1,12 @@
 package com.example.personal_news_brief
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.content.pm.ShortcutInfo
-import android.content.pm.ShortcutManager
-import android.graphics.drawable.Icon
-import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import androidx.core.app.NotificationCompat
-import androidx.core.app.ShareCompat
-import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import android.os.Bundle
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "personal_news_brief/platform"
-    private val NOTIFICATION_CHANNEL_ID = "personal_news_brief_notifications"
-    private val NOTIFICATION_CHANNEL_NAME = "Personal News Brief Notifications"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -139,24 +123,23 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun openUrl(url: String) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
     }
 
     private fun shareText(title: String, text: String) {
-        val intent = ShareCompat.IntentBuilder(this)
-            .setType("text/plain")
-            .setChooserTitle(title)
-            .setText(text)
-            .createChooserIntent()
-        startActivity(intent)
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND)
+        intent.setType("text/plain")
+        intent.putExtra(android.content.Intent.EXTRA_SUBJECT, title)
+        intent.putExtra(android.content.Intent.EXTRA_TEXT, text)
+        startActivity(android.content.Intent.createChooser(intent, "分享到"))
     }
 
     private fun canOpenUrl(url: String): Boolean {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
         val packageManager = packageManager
-        val activities = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        val activities = packageManager.queryIntentActivities(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
         return activities.isNotEmpty()
     }
 
@@ -174,17 +157,17 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun createShortcut(id: String, shortLabel: String, longLabel: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-            val shortcutManager = getSystemService(Context.SHORTCUT_SERVICE) as ShortcutManager
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N_MR1) {
+            val shortcutManager = getSystemService(android.content.Context.SHORTCUT_SERVICE) as android.content.pm.ShortcutManager
             
-            val intent = Intent(this, MainActivity::class.java)
-            intent.action = Intent.ACTION_VIEW
+            val intent = android.content.Intent(this, MainActivity::class.java)
+            intent.action = android.content.Intent.ACTION_VIEW
             intent.putExtra("shortcut_id", id)
             
-            val shortcut = ShortcutInfo.Builder(this, id)
+            val shortcut = android.content.pm.ShortcutInfo.Builder(this, id)
                 .setShortLabel(shortLabel)
                 .setLongLabel(longLabel)
-                .setIcon(Icon.createWithResource(this, R.drawable.ic_launcher_foreground))
+                .setIcon(android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_launcher_foreground))
                 .setIntent(intent)
                 .build()
                 
@@ -193,18 +176,18 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun hasNotificationPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            android.core.content.ContextCompat.checkSelfPermission(
                 this,
                 android.Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
         } else {
             true // Android 13以下不需要权限
         }
     }
 
     private fun requestNotificationPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             if (!hasNotificationPermission()) {
                 // 在实际应用中，这里应该启动权限请求对话框
                 // 由于这是方法调用，我们返回false表示没有权限
@@ -218,44 +201,44 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
                 NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT
+                android.app.NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Personal News Brief应用的通知"
                 enableLights(true)
                 enableVibration(true)
             }
             
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager = getSystemService(android.app.NotificationManager::class.java) as android.app.NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
 
     private fun showNotification(id: Int, title: String, content: String, payload: String?) {
-        val intent = Intent(this, MainActivity::class.java)
+        val intent = android.content.Intent(this, MainActivity::class.java)
         if (payload != null) {
             intent.putExtra("notification_payload", payload)
         }
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
         
-        val pendingIntent = PendingIntent.getActivity(
+        val pendingIntent = android.app.PendingIntent.getActivity(
             this, 0, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
         )
         
-        val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+        val notification = androidx.core.app.NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(content)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
             
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(android.app.NotificationManager::class.java) as android.app.NotificationManager
         notificationManager.notify(id, notification)
     }
 
@@ -272,8 +255,13 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun isNetworkConnected(): Boolean {
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val connectivityManager = getSystemService(android.net.ConnectivityManager::class.java) as android.net.ConnectivityManager
         val activeNetwork = connectivityManager.activeNetworkInfo
         return activeNetwork?.isConnectedOrConnecting == true
+    }
+
+    companion object {
+        private const val NOTIFICATION_CHANNEL_ID = "personal_news_brief_notifications"
+        private const val NOTIFICATION_CHANNEL_NAME = "Personal News Brief Notifications"
     }
 }

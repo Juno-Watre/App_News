@@ -3,11 +3,6 @@ import 'package:personal_news_brief/core/database/isar_service.dart';
 import 'package:personal_news_brief/features/article/data/models/article.dart';
 import 'package:personal_news_brief/features/rss/data/services/rss_parser_service.dart';
 
-// 数据库服务提供者
-final isarServiceProvider = Provider<IsarService>((ref) {
-  return IsarService.instance;
-});
-
 // RSS解析服务提供者
 final rssParserServiceProvider = Provider<RssParserService>((ref) {
   return RssParserService();
@@ -41,15 +36,14 @@ class ArticleListState {
 // 文章列表提供者
 class ArticleListNotifier extends StateNotifier<ArticleListState> {
   final RssParserService _rssParserService;
-  final IsarService _isarService;
 
-  ArticleListNotifier(this._rssParserService, this._isarService)
-      : super(const ArticleListState(articles: []));
+  ArticleListNotifier(this._rssParserService)
+      : super(ArticleListState(articles: []));
 
   Future<void> loadArticles() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final articles = await _isarService.getAllArticles();
+      final articles = await IsarService.getAllArticles();
       state = state.copyWith(articles: articles, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -59,7 +53,7 @@ class ArticleListNotifier extends StateNotifier<ArticleListState> {
   Future<void> loadUnreadArticles() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final articles = await _isarService.getUnreadArticles();
+      final articles = await IsarService.getUnreadArticles();
       state = state.copyWith(articles: articles, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -69,7 +63,7 @@ class ArticleListNotifier extends StateNotifier<ArticleListState> {
   Future<void> loadStarredArticles() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final articles = await _isarService.getStarredArticles();
+      final articles = await IsarService.getStarredArticles();
       state = state.copyWith(articles: articles, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -84,9 +78,9 @@ class ArticleListNotifier extends StateNotifier<ArticleListState> {
       // 保存文章到数据库
       for (final article in newArticles) {
         // 检查文章是否已存在
-        final existingArticle = await _isarService.getArticleByUrl(article.url);
+        final existingArticle = await IsarService.getArticleByUrl(article.url);
         if (existingArticle == null) {
-          await _isarService.saveArticle(article);
+          await IsarService.saveArticle(article);
         }
       }
       
@@ -100,7 +94,7 @@ class ArticleListNotifier extends StateNotifier<ArticleListState> {
   Future<void> searchArticles(String query) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final articles = await _isarService.searchArticles(query);
+      final articles = await IsarService.searchArticles(query);
       state = state.copyWith(articles: articles, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -109,7 +103,7 @@ class ArticleListNotifier extends StateNotifier<ArticleListState> {
 
   Future<void> markAsRead(String url) async {
     try {
-      await _isarService.markAsRead(url);
+      await IsarService.markAsRead(url);
       
       // 更新本地状态
       final updatedArticles = state.articles.map((article) {
@@ -127,7 +121,7 @@ class ArticleListNotifier extends StateNotifier<ArticleListState> {
 
   Future<void> toggleStar(String url) async {
     try {
-      await _isarService.toggleStar(url);
+      await IsarService.toggleStar(url);
       
       // 更新本地状态
       final updatedArticles = state.articles.map((article) {
@@ -150,14 +144,12 @@ class ArticleListNotifier extends StateNotifier<ArticleListState> {
 
 final articleListProvider = StateNotifierProvider<ArticleListNotifier, ArticleListState>((ref) {
   final rssParserService = ref.watch(rssParserServiceProvider);
-  final isarService = ref.watch(isarServiceProvider);
-  return ArticleListNotifier(rssParserService, isarService);
+  return ArticleListNotifier(rssParserService);
 });
 
 // 单个文章提供者
 final articleProvider = FutureProvider.family<Article?, String>((ref, url) async {
-  final isarService = ref.watch(isarServiceProvider);
-  return await isarService.getArticleByUrl(url);
+  return await IsarService.getArticleByUrl(url);
 });
 
 // 当前选中的文章提供者
@@ -205,7 +197,7 @@ class RssSourcesState {
 }
 
 class RssSourcesNotifier extends StateNotifier<RssSourcesState> {
-  RssSourcesNotifier() : super(const RssSourcesState(sources: []));
+  RssSourcesNotifier() : super(RssSourcesState(sources: []));
 
   void addSource(RssSource source) {
     final updatedSources = [...state.sources, source];

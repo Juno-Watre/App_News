@@ -154,7 +154,6 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
               },
               childCount: articleListState.articles.length,
             ),
-          ),
         
         // 上拉加载指示器
         if (_isLoadingMore)
@@ -182,8 +181,9 @@ class SliverRefreshControl extends StatefulWidget {
   State<SliverRefreshControl> createState() => _SliverRefreshControlState();
 }
 
-class _SliverRefreshControlState extends State<SliverRefreshControl>
-    with RefreshIndicatorStateMixin {
+class _SliverRefreshControlState extends State<SliverRefreshControl> {
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+
   @override
   Future<void> refresh() async {
     await widget.onRefresh();
@@ -191,7 +191,8 @@ class _SliverRefreshControlState extends State<SliverRefreshControl>
 
   @override
   Widget build(BuildContext context) {
-    return SliverRefreshIndicator(
+    return RefreshIndicator(
+      key: _refreshIndicatorKey,
       onRefresh: widget.onRefresh,
       child: const SliverToBoxAdapter(child: SizedBox.shrink()),
     );
