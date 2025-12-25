@@ -1,3 +1,5 @@
+System.setProperty("file.encoding", "UTF-8")
+
 pluginManagement {
     val flutterSdkPath =
         run {
